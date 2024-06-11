@@ -49,3 +49,6 @@ The AI chat-bot is packed with cool features:
 - **Themes**: Choose between light and dark UI themes to match your style.
 
 Get ready to enhance your Counter-Strike experience with a chat-bot that's as smart as it is fun! 🎉
+
+## Screenshot
+![image](https://github.com/KristjanPikhof/CS2-Chatbot-with-GPT-Gemini-integration/assets/60576985/0f477ffd-9dff-4c42-bde0-13b8edad0da4)
