@@ -518,9 +518,6 @@ class MainWindow(QWidget):
             with open(config_path, 'w', encoding='utf-8') as configfile:
                 config.write(configfile)
 
-            # Reload the configuration
-            load_config()
-
             # Update global variables
             global BLACKLISTED_USERNAMES, CON_LOG_FILE_PATH, CHAT_KEY, TEAM_CHAT_KEY
             global START_STOP_KEY, TOGGLE_CHAT_KEY, ALL_CHAT_SYSTEM_PROMPT, TEAM_CHAT_SYSTEM_PROMPT
@@ -549,9 +546,14 @@ class MainWindow(QWidget):
             self.config_inputs['geminimodel'].setText(config['SETTINGS']['geminimodel'])
             self.config_inputs['allsystemprompt'].setText(config['SETTINGS']['allsystemprompt'])
             self.config_inputs['teamsystemprompt'].setText(config['SETTINGS']['teamsystemprompt'])
+            
+            # Reload the configuration
+            load_config()
 
-            QMessageBox.information(self, "Settings Saved",
-                                    "Configuration settings saved successfully.")
+            # Restart the application
+            QMessageBox.information(self, "Applying settings", "Configuration settings saved successfully. The application will now restart to apply the new settings.")
+            python = sys.executable
+            os.execl(python, python, *sys.argv)
 
         except Exception as e:
             logging.error(f"Error saving config file: {e}")
@@ -612,6 +614,7 @@ def cleanup():
 
 def main():
     global window, logfile, game
+    load_config()
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()

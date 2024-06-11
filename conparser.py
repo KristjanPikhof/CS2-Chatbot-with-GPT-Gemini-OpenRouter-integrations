@@ -50,9 +50,11 @@ def detect_game(custom_proc="customproc"):
             name = proc.name().lower()
             if name in known_games:
                 return known_games[name]
+            return "cs2"
         except psutil.NoSuchProcess:
             continue
-    return None
+    #return None
+    return "cs2"
 
 def parse_log(game, line: str):
     """
