@@ -518,6 +518,9 @@ class MainWindow(QWidget):
             with open(config_path, 'w', encoding='utf-8') as configfile:
                 config.write(configfile)
 
+            # Reload the configuration
+            load_config()
+
             # Update global variables
             global BLACKLISTED_USERNAMES, CON_LOG_FILE_PATH, CHAT_KEY, TEAM_CHAT_KEY
             global START_STOP_KEY, TOGGLE_CHAT_KEY, ALL_CHAT_SYSTEM_PROMPT, TEAM_CHAT_SYSTEM_PROMPT
@@ -533,15 +536,27 @@ class MainWindow(QWidget):
             openai.api_key = config['SETTINGS']['openaiapikey']
             genai.api_key = config['SETTINGS']['geminiapikey']
 
+            # Update UI elements
+            self.config_inputs['username'].setText(config['SETTINGS']['username'])
+            self.config_inputs['gameconlogpath'].setText(config['SETTINGS']['gameconlogpath'])
+            self.config_inputs['chatkey'].setText(config['SETTINGS']['chatkey'])
+            self.config_inputs['teamchatkey'].setText(config['SETTINGS']['teamchatkey'])
+            self.config_inputs['startstopkey'].setText(config['SETTINGS']['startstopkey'])
+            self.config_inputs['togglechatkey'].setText(config['SETTINGS']['togglechatkey'])
+            self.config_inputs['openaiapikey'].setText(config['SETTINGS']['openaiapikey'])
+            self.config_inputs['geminiapikey'].setText(config['SETTINGS']['geminiapikey'])
+            self.config_inputs['openaimodel'].setText(config['SETTINGS']['openaimodel'])
+            self.config_inputs['geminimodel'].setText(config['SETTINGS']['geminimodel'])
+            self.config_inputs['allsystemprompt'].setText(config['SETTINGS']['allsystemprompt'])
+            self.config_inputs['teamsystemprompt'].setText(config['SETTINGS']['teamsystemprompt'])
+
             QMessageBox.information(self, "Settings Saved",
-                                    "Configuration settings saved successfully.\n"
-                                    "The application will now restart.")
+                                    "Configuration settings saved successfully.")
 
         except Exception as e:
             logging.error(f"Error saving config file: {e}")
             QMessageBox.critical(self, "Error",
-                                 f"An error occurred while saving the settings: {e}") 
-        load_config()
+                                 f"An error occurred while saving the settings: {e}")
 
     def set_ai_model(self, button):
         Status.ai_model = button.text().lower()
