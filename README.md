@@ -51,4 +51,11 @@ The AI chat-bot is packed with cool features:
 Get ready to enhance your Counter-Strike experience with a chat-bot that's as smart as it is fun! 🎉
 
 ## Screenshot
-![image](https://github.com/KristjanPikhof/CS2-Chatbot-with-GPT-Gemini-integration/assets/60576985/0f477ffd-9dff-4c42-bde0-13b8edad0da4)
+
+<div style="display: flex; justify-content: space-between;">
+    <img src="https://github.com/KristjanPikhof/CS2-Chatbot-with-GPT-Gemini-integration/assets/60576985/8c7c3c1e-72c9-4916-b6a6-94589d9a8d31" alt="Dark theme"/>
+    <img src="https://github.com/KristjanPikhof/CS2-Chatbot-with-GPT-Gemini-integration/assets/60576985/2a3ed5bd-cccb-4440-ac4d-c4fde5a821bf" alt="Light theme"/>
+</div>
+
+
+
