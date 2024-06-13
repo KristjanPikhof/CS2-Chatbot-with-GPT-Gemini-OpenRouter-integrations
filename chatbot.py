@@ -1,4 +1,6 @@
 import openai
+import time
+import random
 import conparser as cp
 import keyboard
 import configparser
@@ -170,6 +172,7 @@ CHAT_KEY = config['SETTINGS']['chatkey']
 TEAM_CHAT_KEY = config['SETTINGS']['teamchatkey']
 START_STOP_KEY = config['SETTINGS']['startstopkey']
 TOGGLE_CHAT_KEY = config['SETTINGS']['togglechatkey']
+TOGGLE_MODEL_KEY = config['SETTINGS']['togglemodelkey']
 ALL_CHAT_SYSTEM_PROMPT = config['SETTINGS']['allsystemprompt']
 TEAM_CHAT_SYSTEM_PROMPT = config['SETTINGS']['teamsystemprompt']
 
@@ -194,9 +197,10 @@ def _remove_hotkeys_if_exists(hotkeys):
             pass
 
 def register_hotkeys():
-    _remove_hotkeys_if_exists([START_STOP_KEY, TOGGLE_CHAT_KEY])
+    _remove_hotkeys_if_exists([START_STOP_KEY, TOGGLE_CHAT_KEY, TOGGLE_MODEL_KEY])
     keyboard.add_hotkey(START_STOP_KEY, toggle_status)
     keyboard.add_hotkey(TOGGLE_CHAT_KEY, toggle_chat_mode)
+    keyboard.add_hotkey(TOGGLE_MODEL_KEY, toggle_model)
     logging.info(
         f"Hotkeys registered: {START_STOP_KEY} for start/stop, {TOGGLE_CHAT_KEY} for toggle chat mode")
 
@@ -219,13 +223,22 @@ def toggle_status():
         window.start_button.setText("Start")
         window.status_label.setText("Status: Stopped")
 
-# Function to toggle the chat mode
+# Function to toggle the chat mode (ALL vs TEAM)
 def toggle_chat_mode():
     Status.chat_mode = "team" if Status.chat_mode == "all" else "all"
     window.chat_mode_label.setText(
         f"Chat Mode: {Status.chat_mode.capitalize()}")
     logging.info(f"Chat mode toggled to: {Status.chat_mode}")
-    
+
+# Function to toggle between the AI models
+def toggle_model():
+    if Status.ai_model == "openai":
+        Status.ai_model = "gemini"
+        logging.info("Switched to Gemini AI model.")
+    else:
+        Status.ai_model = "openai"
+        logging.info("Switched to OpenAI AI model.")
+
 def clean_text(text: str) -> str:
     """
     Removes or replaces unwanted characters from the input text and checks for inappropriate content.
@@ -331,16 +344,20 @@ class AIThread(QThread):
             logging.error(f"Invalid AI model selected: {self.ai_model}")
             reply = None
 
+        random_delay = random.uniform(2, 4)
+        time.sleep(random_delay)
         self.replyGenerated.emit(reply)  # Emit the reply
 
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.current_theme = "dark"
-        self.setWindowTitle("Counter-Strike AI assisten chat-bot")
+        self.setWindowTitle("Counter-Strike AI Assistant Chat-Bot 🤖")
         self.setWindowIcon(QIcon(resource_path('media/esmaabi_icon.ico')))
         self.setMinimumSize(450, 875)
         self.initUI()
+        self.openai_radio = QRadioButton("OpenAI")
+        self.gemini_radio = QRadioButton("Gemini")
 
     def initUI(self):
         layout = QVBoxLayout()
@@ -458,8 +475,10 @@ class MainWindow(QWidget):
 
         if Status.ai_model == "openai":
             openai_radio.setChecked(True)
+            gemini_radio.setChecked(False)
         else:
             gemini_radio.setChecked(True)
+            openai_radio.setChecked(False)
 
         ai_group.buttonClicked.connect(self.set_ai_model)
 
@@ -561,7 +580,30 @@ class MainWindow(QWidget):
                                  f"An error occurred while saving the settings: {e}")
 
     def set_ai_model(self, button):
-        Status.ai_model = button.text().lower()
+        ai_model = button.text().lower()
+        Status.ai_model = ai_model
+
+        if ai_model == "openai":
+            logging.info("Switched to OpenAI AI model.")
+        elif ai_model == "gemini":
+            logging.info("Switched to Gemini AI model.")
+        else:
+            logging.error(f"Error changing AI model: {ai_model}")
+            return
+
+        self.update_ui_for_ai_model()
+
+    def update_ui_for_ai_model(self):
+        """Update UI elements based on the selected AI model."""
+        if Status.ai_model == "openai":
+            self.openai_radio.setChecked(True)
+            self.gemini_radio.setChecked(False)
+        elif Status.ai_model == "gemini":
+            self.openai_radio.setChecked(False)
+            self.gemini_radio.setChecked(True)
+        else:
+            logging.error(f"Error changing AI model: {Status.ai_model}")
+
 
     def closeEvent(self, event):
         """Handles the close event for the main window."""
