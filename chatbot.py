@@ -1,4 +1,4 @@
-import openai
+from openai import OpenAI
 import time
 import random
 import conparser as cp
@@ -177,7 +177,7 @@ ALL_CHAT_SYSTEM_PROMPT = config['SETTINGS']['allsystemprompt']
 TEAM_CHAT_SYSTEM_PROMPT = config['SETTINGS']['teamsystemprompt']
 
 # Fetch the AI API keys and models from the config file
-openai.api_key = config['SETTINGS']['openaiapikey']
+OpenAI.api_key = config['SETTINGS']['openaiapikey']
 OPENAI_MODEL = config['SETTINGS'].get('openaimodel', 'gpt-4o')
 genai.api_key = config['SETTINGS']['geminiapikey']
 genai.configure(api_key=config['SETTINGS']['geminiapikey']) 
@@ -316,12 +316,18 @@ def openai_interact(user: str, message: str, chat_type: str):
         f"Interacting with OpenAI API.\n- Chat type: {chat_type}\n- System prompt: {system_instruction}\n- Message: {user_message}")
 
     try:
-        response = openai.ChatCompletion.create(model=OPENAI_MODEL,
-                                                messages=messages)
-        reply = clean_text(response.choices[0].message['content'])
+        headers = {
+            "Authorization": f"Bearer {config['SETTINGS']['openaiapikey']}"
+        }
+        client = OpenAI(api_key=config['SETTINGS']['openaiapikey'])
+        response = client.chat.completions.create(
+            model=OPENAI_MODEL,
+            messages=messages
+        )
+        reply = clean_text(response.choices[0].message.content)
         logging.info(f"OpenAI API response: {reply}")
         return reply
-    except openai.error.OpenAIError as e:
+    except Exception as e:
         logging.error(f"An error occurred with OpenAI API: {e}")
         return None
 
@@ -502,9 +508,12 @@ class MainWindow(QWidget):
         self.ai_thread.start()
 
     def send_reply(self, reply):
-        """Sends the reply to the game."""
-        if reply:
-            cp.sim_key_presses(reply, chat_type=Status.chat_mode)
+         """Sends the reply to the game."""
+         if reply:
+             cp.sim_key_presses(reply, chat_type=Status.chat_mode)
+         else:
+             logging.warning("No reply to send.")
+
 
     def toggle_dark_mode(self):
        """Toggles between light and dark mode."""
@@ -549,7 +558,7 @@ class MainWindow(QWidget):
             ALL_CHAT_SYSTEM_PROMPT = config['SETTINGS']['allsystemprompt']
             TEAM_CHAT_SYSTEM_PROMPT = config['SETTINGS']['teamsystemprompt']
 
-            openai.api_key = config['SETTINGS']['openaiapikey']
+            OpenAI.api_key = config['SETTINGS']['openaiapikey']
             genai.api_key = config['SETTINGS']['geminiapikey']
 
             # Update UI elements
