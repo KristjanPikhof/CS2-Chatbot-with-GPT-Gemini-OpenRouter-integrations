@@ -9,10 +9,8 @@ Welcome to the Counter-Strike AI Assistant Chat-Bot! This nifty script brings th
 Before diving in, make sure you have the following:
 
 - 64-bit Windows
-- Python 3.11+ (but less than 3.12)
-- `openai 0.28` (Install with `pip install -r requirements.txt`)
-
-You'll need an OpenAI API key to use the chat features. If you're opting for Gemini's generative AI services, a Gemini API key is also required.
+- Python 3.11+
+- You'll need an API key to use the chat features.
 
 ## 🚀 Setup
 
@@ -44,7 +42,7 @@ For optimal performance, it's recommended to start the game before running the s
 
 The AI chat-bot is packed with cool features:
 - **Hotkeys**: Control the chat-bot with keyboard shortcuts to start/stop and toggle between ALL and TEAM chats.
-- **Automated API Interactions**: Seamlessly connect with OpenAI's Chat Completion and Gemini's Generative Model APIs.
+- **Automated API Interactions**: Seamlessly connect with OpenAI's Chat Completion, Gemini's Generative Model APIs, and OpenRouter's modelbase, including access to free models, ensuring smooth and efficient data exchanges.
 - **Configurable Settings**: Customize prompts and API parameters via `config.ini` or the GUI.
 - **Themes**: Choose between light and dark UI themes to match your style.
 
@@ -53,9 +51,8 @@ Get ready to enhance your Counter-Strike experience with a chat-bot that's as sm
 ## Screenshot
 
 <div style="display: flex; justify-content: space-between;">
-    <img src="https://github.com/KristjanPikhof/CS2-Chatbot-with-GPT-Gemini-integration/assets/60576985/8c7c3c1e-72c9-4916-b6a6-94589d9a8d31" alt="Dark theme"/>
-    <img src="https://github.com/KristjanPikhof/CS2-Chatbot-with-GPT-Gemini-integration/assets/60576985/2a3ed5bd-cccb-4440-ac4d-c4fde5a821bf" alt="Light theme"/>
+    <img src="https://github.com/KristjanPikhof/CS2-Chatbot-with-GPT-Gemini-OpenRouter-integrations/assets/60576985/6efc09be-d1cf-4e81-b050-4acfb8bce363" alt="Dark theme"/>
+    <img src="https://github.com/KristjanPikhof/CS2-Chatbot-with-GPT-Gemini-OpenRouter-integrations/assets/60576985/fdeb11b5-5016-4897-9042-dea275c41686" alt="Light theme"/>
 </div>
-
 
 
