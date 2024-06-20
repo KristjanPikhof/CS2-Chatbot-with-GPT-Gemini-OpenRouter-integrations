@@ -630,11 +630,11 @@ class MainWindow(QWidget):
         Status.ai_model = ai_model
 
         if ai_model == "openai":
-            logging.info("Switched to OpenAI AI model. " + ai_model)
+            logging.info("Switched to OpenAI AI model. ")
         elif ai_model == "gemini":
-            logging.info("Switched to Gemini AI model. " + ai_model)
+            logging.info("Switched to Gemini AI model. ")
         elif ai_model == "openrouter":
-            logging.info("Switched to OpenRouter AI model. " + ai_model)
+            logging.info("Switched to OpenRouter AI model. ")
         else:
             logging.error(f"Error changing AI model: {ai_model}")
             return
