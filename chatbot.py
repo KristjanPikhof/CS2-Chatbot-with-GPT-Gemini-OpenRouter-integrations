@@ -327,7 +327,7 @@ def interact_openrouter(user: str, message: str, chat_type: str):
         api_key = OPENROUTER_KEY,
         base_url = OPENROUTER_BASE_URL,
         default_headers = {
-        "HTTP-Referer": "https://github.com/KristjanPikhof/CS2-Chatbot-with-GPT-Gemini-integration",
+        "HTTP-Referer": "https://github.com/KristjanPikhof/CS2-Chatbot-with-GPT-Gemini-OpenRouter-integrations",
         "X-Title": "CS2 Assistant"},
     )
 
