@@ -8,6 +8,7 @@ import os
 import sys
 import logging
 import google.generativeai as genai
+import utils as util
 
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QLabel, QLineEdit, QPushButton, QRadioButton,
@@ -135,8 +136,11 @@ def load_config():
         'togglechatkey': 'F11',
         'openaiapikey': '',
         'geminiapikey': '',
+        'openrouterapikey': '',
+        'openroutermodel': '',
         'allsystemprompt': 'You are a helpful assistant in CS2',
-        'teamsystemprompt': 'You are a helpful assistant in CS2'
+        'teamsystemprompt': 'You are a helpful assistant in CS2',
+        'togglemodelkey': 'F12'
     }
     try:
         config_path = resource_path(CONFIG_FILE) 
@@ -177,11 +181,14 @@ ALL_CHAT_SYSTEM_PROMPT = config['SETTINGS']['allsystemprompt']
 TEAM_CHAT_SYSTEM_PROMPT = config['SETTINGS']['teamsystemprompt']
 
 # Fetch the AI API keys and models from the config file
-OpenAI.api_key = config['SETTINGS']['openaiapikey']
+OPENAI_KEY = config['SETTINGS']['openaiapikey']
+GENAI_KEY = config['SETTINGS']['geminiapikey']
+OPENROUTER_KEY = config['SETTINGS']['openrouterapikey']
 OPENAI_MODEL = config['SETTINGS'].get('openaimodel', 'gpt-4o')
-genai.api_key = config['SETTINGS']['geminiapikey']
-genai.configure(api_key=config['SETTINGS']['geminiapikey']) 
+OPENROUTER_MODEL = config['SETTINGS'].get('openroutermodel', 'anthropic/claude-3-haiku')
 GEMINI_MODEL = config['SETTINGS'].get('geminimodel', 'gemini-1.5-flash-latest')
+OPENAI_BASE_URL = "https://api.openai.com/v1/"
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1/"
 
 # Class to manage the running status, chat mode, and chosen AI
 class Status:
@@ -235,48 +242,19 @@ def toggle_model():
     if Status.ai_model == "openai":
         Status.ai_model = "gemini"
         logging.info("Switched to Gemini AI model.")
+    elif Status.ai_model == "gemini":
+        Status.ai_model = "openrouter"
+        logging.info("Switched to OpenRouter AI model.")
     else:
         Status.ai_model = "openai"
         logging.info("Switched to OpenAI AI model.")
-
-def clean_text(text: str) -> str:
-    """
-    Removes or replaces unwanted characters from the input text and checks for inappropriate content.
-    
-    Args:
-        text (str): The text to be cleaned.
-        
-    Returns:
-        str: The cleaned text.
-    """
-    replacements = {
-        '\u2014': '-',    # Em dash to regular dash
-        '\u2019': "'",    # Right single quotation mark to apostrophe
-        '\U0001f680': '', # Remove rocket emoji
-        # Add further unwanted symbols here
-    }
-
-    # Replace unwanted characters
-    for key, value in replacements.items():
-        text = text.replace(key, value)
-    
-    # Remove newline characters
-    text = text.replace('\n', ' ').replace('\r', ' ')
-
-    # Additional cleaning or filtering logic can be added here
-    # For example, to filter out certain phrases or toxic responses
-    inappropriate_phrases = ["toxic response", "additional unwanted content"]
-    for phrase in inappropriate_phrases:
-        if phrase.lower() in text.lower():
-            logging.warning(f"Filtered out inappropriate content: {phrase}")
-            return ""  # Return an empty string or handle as needed
-            
-    return text.strip()  # Ensure no leading or trailing whitespace
 
 # Function to interact with Gemini API
 def gemini_interact(user: str, message: str, chat_type: str):
     system_instruction = TEAM_CHAT_SYSTEM_PROMPT if chat_type == "team" else ALL_CHAT_SYSTEM_PROMPT
     user_message = f"Your team mate {user} wrote: {message}." if chat_type == "team" else f"Other player {user} wrote: {message}."
+
+    genai.configure(api_key=GENAI_KEY) 
 
     model = genai.GenerativeModel(
         model_name=GEMINI_MODEL,
@@ -290,7 +268,7 @@ def gemini_interact(user: str, message: str, chat_type: str):
 
     try:
         response = model.generate_content(user_message)
-        reply = clean_text(response.text.replace('"', ''))
+        reply = util.clean_text(response.text.replace('"', ''))
         logging.info(f"Gemini API response: {reply}")
         return reply
 
@@ -307,6 +285,9 @@ def openai_interact(user: str, message: str, chat_type: str):
     system_instruction = TEAM_CHAT_SYSTEM_PROMPT if chat_type == "team" else ALL_CHAT_SYSTEM_PROMPT
     user_message = f"Your team-mate {user} wrote: {message}." if chat_type == "team" else f"Other player {user} wrote: {message}."
 
+    OpenAI.api_key = OPENAI_KEY
+    OpenAI.api_base = OPENAI_BASE_URL
+
     messages = [
         {"role": "system", "content": system_instruction},
         {"role": "user", "content": user_message}
@@ -317,18 +298,54 @@ def openai_interact(user: str, message: str, chat_type: str):
 
     try:
         headers = {
-            "Authorization": f"Bearer {config['SETTINGS']['openaiapikey']}"
+            "Authorization": f"Bearer {OPENAI_KEY}"
         }
-        client = OpenAI(api_key=config['SETTINGS']['openaiapikey'])
+        client = OpenAI(api_key=OPENAI_KEY)
         response = client.chat.completions.create(
             model=OPENAI_MODEL,
             messages=messages
         )
-        reply = clean_text(response.choices[0].message.content)
+        reply = util.clean_text(response.choices[0].message.content)
         logging.info(f"OpenAI API response: {reply}")
         return reply
     except Exception as e:
         logging.error(f"An error occurred with OpenAI API: {e}")
+        return None
+    
+# Function to interact with
+def interact_openrouter(user: str, message: str, chat_type: str):
+    system_instruction = TEAM_CHAT_SYSTEM_PROMPT if chat_type == "team" else ALL_CHAT_SYSTEM_PROMPT
+    user_message = f"Your team-mate {user} wrote: {message}." if chat_type == "team" else f"Other player {user} wrote: {message}."
+
+    OpenAI.api_key = OPENROUTER_KEY
+    OpenAI.api_base = OPENROUTER_BASE_URL
+
+    logging.info(
+        f"Interacting with OpenAI API.\n- Chat type: {chat_type}\n- System prompt: {system_instruction}\n- Message: {user_message}")
+    
+    client = OpenAI(
+        api_key = OPENROUTER_KEY,
+        base_url = OPENROUTER_BASE_URL,
+        default_headers = {
+        "HTTP-Referer": "https://github.com/KristjanPikhof/CS2-Chatbot-with-GPT-Gemini-integration",
+        "X-Title": "CS2 Assistant"},
+    )
+
+    messages = [
+        {"role": "system", "content": system_instruction},
+        {"role": "user", "content": user_message}
+    ]
+
+    try:
+        response = client.chat.completions.create(
+            model=OPENROUTER_MODEL,
+            messages=messages
+        )
+        reply = util.clean_text(response.choices[0].message.content)
+        logging.info(f"OpenRouter API response: {reply}")
+        return reply
+    except Exception as e:
+        logging.error(f"An error occurred with OpenRouter API: {e}")
         return None
 
 class AIThread(QThread):
@@ -346,13 +363,15 @@ class AIThread(QThread):
             reply = openai_interact(self.user, self.message, self.chat_type)
         elif self.ai_model == "gemini":
             reply = gemini_interact(self.user, self.message, self.chat_type)
+        elif self.ai_model == "openrouter":
+            reply = interact_openrouter(self.user, self.message, self.chat_type)
         else:
             logging.error(f"Invalid AI model selected: {self.ai_model}")
             reply = None
 
         random_delay = random.uniform(2, 4)
         time.sleep(random_delay)
-        self.replyGenerated.emit(reply)  # Emit the reply
+        self.replyGenerated.emit(reply)
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -360,10 +379,8 @@ class MainWindow(QWidget):
         self.current_theme = "dark"
         self.setWindowTitle("Counter-Strike AI Assistant Chat-Bot 🤖")
         self.setWindowIcon(QIcon(resource_path('media/esmaabi_icon.ico')))
-        self.setMinimumSize(450, 875)
+        self.setMinimumSize(450, 1025)
         self.initUI()
-        self.openai_radio = QRadioButton("OpenAI")
-        self.gemini_radio = QRadioButton("Gemini")
 
     def initUI(self):
         layout = QVBoxLayout()
@@ -397,10 +414,13 @@ class MainWindow(QWidget):
             'togglechatkey': "Toggle chat key",
             'openaiapikey': "OpenAI API key",
             'geminiapikey': "Gemini API key",
+            'openrouterapikey': "OpenRouter API key",
             'openaimodel': "OpenAI model",
             'geminimodel': "Gemini model",
+            'openroutermodel': "OpenRouter model",
             'allsystemprompt': "ALL chat prompt",
-            'teamsystemprompt': "TEAM chat prompt"
+            'teamsystemprompt': "TEAM chat prompt",
+            'togglemodelkey': "Toggle between AI models"
         }
 
         # Dictionary for custom hints
@@ -413,16 +433,19 @@ class MainWindow(QWidget):
             'togglechatkey': "Enter the toggle chat keybind (default 'F11')",
             'openaiapikey': "Enter your OpenAI API key",
             'geminiapikey': "Enter your Gemini API key",
+            'openrouterapikey': "Enter your OpenRouter API key",
             'openaimodel': "Enter your OpenAI model. Example: gpt-4o",
             'geminimodel': "Enter your Gemini model. Example: gemini-1.5-flash-latest",
+            'openroutermodel': "Enter your OpenAI model. Example: openai/gpt-4o or anthropic/claude-3-haiku",
             'allsystemprompt': "Enter your AI system prompt for ALL chat",
-            'teamsystemprompt': "Enter your AI system prompt for TEAM chat"
+            'teamsystemprompt': "Enter your AI system prompt for TEAM chat",
+            'togglemodelkey': "Enter the keybind to toggle between AI models",
         }
 
         for key in config['SETTINGS']:
             h_layout = QHBoxLayout()
             label = QLabel(f"{titles.get(key, key.replace('_', ' ').title())}:")
-            if key in ("openaiapikey", "geminiapikey"):
+            if key in ("openaiapikey", "geminiapikey", "openrouterapikey"):
                 input_field = QLineEdit(config['SETTINGS'][key])
                 input_field.setEchoMode(QLineEdit.Password)
                 input_field.setToolTip(hints.get(key, ""))
@@ -472,20 +495,28 @@ class MainWindow(QWidget):
         # AI Model Selection
         layout.addWidget(QLabel("Select AI Model"))
         ai_group = QButtonGroup(self)
-        openai_radio = QRadioButton("OpenAI")
-        gemini_radio = QRadioButton("Gemini")
-        ai_group.addButton(openai_radio)
-        ai_group.addButton(gemini_radio)
-        layout.addWidget(openai_radio)
-        layout.addWidget(gemini_radio)
+        self.openai_radio = QRadioButton("OpenAI")
+        self.gemini_radio = QRadioButton("Gemini")
+        self.openrouter_radio = QRadioButton("OpenRouter")
+        ai_group.addButton(self.openai_radio)
+        ai_group.addButton(self.gemini_radio)
+        ai_group.addButton(self.openrouter_radio)
+        layout.addWidget(self.openai_radio)
+        layout.addWidget(self.gemini_radio)
+        layout.addWidget(self.openrouter_radio)
 
         if Status.ai_model == "openai":
-            openai_radio.setChecked(True)
-            gemini_radio.setChecked(False)
+            self.openrouter_radio.setChecked(False)
+            self.openai_radio.setChecked(True)
+        elif Status.ai_model == "gemini":
+            self.openai_radio.setChecked(False)
+            self.gemini_radio.setChecked(True)
+        elif Status.ai_model == "openrouter":
+            self.gemini_radio.setChecked(False)
+            self.openrouter_radio.setChecked(True)            
         else:
-            gemini_radio.setChecked(True)
-            openai_radio.setChecked(False)
-
+            logging.error(f"Error changing AI model: {Status.ai_model}")
+            
         ai_group.buttonClicked.connect(self.set_ai_model)
 
         # Credits
@@ -513,7 +544,6 @@ class MainWindow(QWidget):
              cp.sim_key_presses(reply, chat_type=Status.chat_mode)
          else:
              logging.warning("No reply to send.")
-
 
     def toggle_dark_mode(self):
        """Toggles between light and dark mode."""
@@ -549,17 +579,21 @@ class MainWindow(QWidget):
             # Update global variables
             global BLACKLISTED_USERNAMES, CON_LOG_FILE_PATH, CHAT_KEY, TEAM_CHAT_KEY
             global START_STOP_KEY, TOGGLE_CHAT_KEY, ALL_CHAT_SYSTEM_PROMPT, TEAM_CHAT_SYSTEM_PROMPT
+            global OPENAI_KEY, OPENROUTER_KEY, GENAI_KEY, TOGGLE_MODEL_KEY
             BLACKLISTED_USERNAMES = get_blacklisted_usernames()
             CON_LOG_FILE_PATH = config['SETTINGS']['gameconlogpath']
             CHAT_KEY = config['SETTINGS']['chatkey']
             TEAM_CHAT_KEY = config['SETTINGS']['teamchatkey']
             START_STOP_KEY = config['SETTINGS']['startstopkey']
             TOGGLE_CHAT_KEY = config['SETTINGS']['togglechatkey']
+            TOGGLE_MODEL_KEY = config['SETTINGS']['togglemodelkey']
             ALL_CHAT_SYSTEM_PROMPT = config['SETTINGS']['allsystemprompt']
             TEAM_CHAT_SYSTEM_PROMPT = config['SETTINGS']['teamsystemprompt']
 
-            OpenAI.api_key = config['SETTINGS']['openaiapikey']
-            genai.api_key = config['SETTINGS']['geminiapikey']
+            OPENAI_KEY = config['SETTINGS']['openaiapikey']
+            OPENROUTER_KEY = config['SETTINGS']['openrouterapikey']
+            GENAI_KEY = config['SETTINGS']['geminiapikey']
+
 
             # Update UI elements
             self.config_inputs['username'].setText(config['SETTINGS']['username'])
@@ -574,7 +608,10 @@ class MainWindow(QWidget):
             self.config_inputs['geminimodel'].setText(config['SETTINGS']['geminimodel'])
             self.config_inputs['allsystemprompt'].setText(config['SETTINGS']['allsystemprompt'])
             self.config_inputs['teamsystemprompt'].setText(config['SETTINGS']['teamsystemprompt'])
-            
+            self.config_inputs['openrouterapikey'].setText(config['SETTINGS']['openrouterapikey'])
+            self.config_inputs['openroutermodel'].setText(config['SETTINGS']['openroutermodel'])
+            self.config_inputs['togglemodelkey'].setText(config['SETTINGS']['togglemodelkey'])
+
             # Reload the configuration
             load_config()
 
@@ -593,9 +630,11 @@ class MainWindow(QWidget):
         Status.ai_model = ai_model
 
         if ai_model == "openai":
-            logging.info("Switched to OpenAI AI model.")
+            logging.info("Switched to OpenAI AI model. " + ai_model)
         elif ai_model == "gemini":
-            logging.info("Switched to Gemini AI model.")
+            logging.info("Switched to Gemini AI model. " + ai_model)
+        elif ai_model == "openrouter":
+            logging.info("Switched to OpenRouter AI model. " + ai_model)
         else:
             logging.error(f"Error changing AI model: {ai_model}")
             return
@@ -605,11 +644,14 @@ class MainWindow(QWidget):
     def update_ui_for_ai_model(self):
         """Update UI elements based on the selected AI model."""
         if Status.ai_model == "openai":
+            self.openrouter_radio.setChecked(False)
             self.openai_radio.setChecked(True)
-            self.gemini_radio.setChecked(False)
         elif Status.ai_model == "gemini":
-            self.openai_radio.setChecked(False)
+            self.openrouter_radio.setChecked(False)
             self.gemini_radio.setChecked(True)
+        elif Status.ai_model == "openrouter":
+            self.gemini_radio.setChecked(False)
+            self.openrouter_radio.setChecked(True)
         else:
             logging.error(f"Error changing AI model: {Status.ai_model}")
 
@@ -645,6 +687,10 @@ def process_message(parsed_log):
         reply = gemini_interact(parsed_log['username'],
                                 parsed_log['message'],
                                 Status.chat_mode)
+    elif Status.ai_model == "openrouter":
+        reply = interact_openrouter(parsed_log['username'],
+                                parsed_log['message'],
+                                Status.chat_mode)    
     else:
         logging.error(f"Invalid AI model selected: {Status.ai_model}")
         reply = None
