@@ -159,7 +159,7 @@ def load_config():
                     config[section][key] = defaults[key]
                     logging.warning(
                         f"Setting '{key}' in 'config.ini' is empty. Using default: '{defaults[key]}'")
-                elif key in ("openaiapikey", "geminiapikey"):
+                elif key in ("openaiapikey", "geminiapikey", "openrouterapikey"):
                     logging.info(f"{key} = {'*' * len(config[section][key])}")  # Mask API keys
                 else:
                     logging.info(f"{key} = {config[section][key]}")
@@ -184,8 +184,8 @@ TEAM_CHAT_SYSTEM_PROMPT = config['SETTINGS']['teamsystemprompt']
 OPENAI_KEY = config['SETTINGS']['openaiapikey']
 GENAI_KEY = config['SETTINGS']['geminiapikey']
 OPENROUTER_KEY = config['SETTINGS']['openrouterapikey']
-OPENAI_MODEL = config['SETTINGS'].get('openaimodel', 'gpt-4o')
-OPENROUTER_MODEL = config['SETTINGS'].get('openroutermodel', 'anthropic/claude-3-haiku')
+OPENAI_MODEL = config['SETTINGS'].get('openaimodel', 'gpt-4o-mini')
+OPENROUTER_MODEL = config['SETTINGS'].get('openroutermodel', 'meta-llama/llama-3.1-8b-instruct:free')
 GEMINI_MODEL = config['SETTINGS'].get('geminimodel', 'gemini-1.5-flash-latest')
 OPENAI_BASE_URL = "https://api.openai.com/v1/"
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1/"
@@ -434,9 +434,9 @@ class MainWindow(QWidget):
             'openaiapikey': "Enter your OpenAI API key",
             'geminiapikey': "Enter your Gemini API key",
             'openrouterapikey': "Enter your OpenRouter API key",
-            'openaimodel': "Enter your OpenAI model. Example: gpt-4o",
-            'geminimodel': "Enter your Gemini model. Example: gemini-1.5-flash-latest",
-            'openroutermodel': "Enter your OpenAI model. Example: openai/gpt-4o or anthropic/claude-3-haiku",
+            'openaimodel': "Enter OpenAI model. Example: gpt-4o-mini",
+            'geminimodel': "Enter Gemini model. Example: gemini-1.5-flash-latest",
+            'openroutermodel': "Enter OpenRouter model. Example: openai/gpt-4o-mini",
             'allsystemprompt': "Enter your AI system prompt for ALL chat",
             'teamsystemprompt': "Enter your AI system prompt for TEAM chat",
             'togglemodelkey': "Enter the keybind to toggle between AI models",
